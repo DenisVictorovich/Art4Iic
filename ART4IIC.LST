@@ -1,0 +1,1231 @@
+
+AVRASM ver. 1.30  art4iic.asm Tue Nov 21 21:42:24 2023
+
+
+         
+         ; -------------------------------------------------------------------------------------------------------------------------------- ;
+         ;                          КОНВЕРТЕР ПОСЛЕДОВАТЕЛЬНОГО АСИНХРОННОГО КАНАЛА В СИНХРОНИЗОВАННЫЙ ТИПА  «I2C»                          ;
+         ;                                   (линии SCL и SDA должны быть «подтянуты вверх» через 10 кОм)                                   ;
+         ; -------------------------------------------------------------------------------------------------------------------------------- ;
+         
+          .include "include/tn45def.asm"
+         
+         ; Number            : AVR000
+         ; File name         : "tn45def.asm"
+         ; Title             : Register/Bit Definitions for the ATtiny45
+         ; Date              : 2004-10-19
+         ; Version           : 2.02
+         ; Support E-mail    : avr@atmel.com
+         ; Target MCU        : ATtiny45
+         
+          .equ	SREG	= 0x3f
+          .equ	SPH	= 0x3e
+          .equ	SPL	= 0x3d
+          .equ	GIMSK	= 0x3b
+          .equ	GIFR	= 0x3a
+          .equ	TIMSK	= 0x39
+          .equ	TIFR	= 0x38
+          .equ	SPMCSR	= 0x37
+          .equ	MCUCR	= 0x35
+          .equ	MCUSR	= 0x34
+          .equ	TCCR0B	= 0x33
+          .equ	TCNT0	= 0x32
+          .equ	OSCCAL	= 0x31
+          .equ	TCCR1	= 0x30
+          .equ	TCNT1	= 0x2f
+          .equ	OCR1A	= 0x2e
+          .equ	OCR1C	= 0x2d
+          .equ	GTCCR	= 0x2c
+          .equ	OCR1B	= 0x2b
+          .equ	TCCR0A	= 0x2a
+          .equ	OCR0A	= 0x29
+          .equ	OCR0B	= 0x28
+          .equ	PLLCSR	= 0x27
+          .equ	CLKPR	= 0x26
+          .equ	DTVALA	= 0x25
+          .equ	DTVALB	= 0x24
+          .equ	DTPS	= 0x23
+          .equ	DWDR	= 0x22
+          .equ	WDTCR	= 0x21
+          .equ	PRR	= 0x20
+          .equ	EEARH	= 0x1f
+          .equ	EEARL	= 0x1e
+          .equ	EEDR	= 0x1d
+          .equ	EECR	= 0x1c
+          .equ	PORTB	= 0x18
+          .equ	DDRB	= 0x17
+          .equ	PINB	= 0x16
+          .equ	PCMSK	= 0x15
+          .equ	DIDR0	= 0x14
+          .equ	GPIOR2	= 0x13
+          .equ	GPIOR1	= 0x12
+          .equ	GPIOR0	= 0x11
+          .equ	USIBR	= 0x10
+          .equ	USIDR	= 0x0f
+          .equ	USISR	= 0x0e
+          .equ	USICR	= 0x0d
+          .equ	ACSR	= 0x08
+          .equ	ADMUX	= 0x07
+          .equ	ADCSRA	= 0x06
+          .equ	ADCH	= 0x05
+          .equ	ADCL	= 0x04
+          .equ	ADCSRB	= 0x03
+         
+         ; PORTB - Data Register, Port B
+          .equ	PORTB0	= 0	;
+          .equ	PB0	= 0	; FOR COMPATIBILITY - DON'T USE IN NEW PROGRAMS
+          .equ	PORTB1	= 1	;
+          .equ	PB1	= 1	; FOR COMPATIBILITY - DON'T USE IN NEW PROGRAMS
+          .equ	PORTB2	= 2	;
+          .equ	PB2	= 2	; FOR COMPATIBILITY - DON'T USE IN NEW PROGRAMS
+          .equ	PORTB3	= 3	;
+          .equ	PB3	= 3	; FOR COMPATIBILITY - DON'T USE IN NEW PROGRAMS
+          .equ	PORTB4	= 4	;
+          .equ	PB4	= 4	; FOR COMPATIBILITY - DON'T USE IN NEW PROGRAMS
+          .equ	PORTB5	= 5	;
+          .equ	PB5	= 5	; FOR COMPATIBILITY - DON'T USE IN NEW PROGRAMS
+         
+         ; DDRB - Data Direction Register, Port B
+          .equ	DDB0	= 0	;
+          .equ	DDB1	= 1	;
+          .equ	DDB2	= 2	;
+          .equ	DDB3	= 3	;
+          .equ	DDB4	= 4	;
+          .equ	DDB5	= 5	;
+         
+         ; PINB - Input Pins, Port B
+          .equ	PINB0	= 0	;
+          .equ	PINB1	= 1	;
+          .equ	PINB2	= 2	;
+          .equ	PINB3	= 3	;
+          .equ	PINB4	= 4	;
+          .equ	PINB5	= 5	;
+         
+         ; ANALOG_COMPARATOR
+         ; ADCSRB - ADC Control and Status Register B
+          .equ	ACME	= 6	; Analog Comparator Multiplexer Enable
+         
+         ; ACSR - Analog Comparator Control And Status Register
+          .equ	ACIS0	= 0	; Analog Comparator Interrupt Mode Select bit 0
+          .equ	ACIS1	= 1	; Analog Comparator Interrupt Mode Select bit 1
+          .equ	ACIE	= 3	; Analog Comparator Interrupt Enable
+          .equ	ACI	= 4	; Analog Comparator Interrupt Flag
+          .equ	ACO	= 5	; Analog Compare Output
+          .equ	ACBG	= 6	; Analog Comparator Bandgap Select
+          .equ	ACD	= 7	; Analog Comparator Disable
+         
+         ; DIDR0 -
+          .equ	AIN0D	= 0	; AIN0 Digital Input Disable
+          .equ	AIN1D	= 1	; AIN1 Digital Input Disable
+         
+         ; AD_CONVERTER
+         ; ADMUX - The ADC multiplexer Selection Register
+          .equ	MUX0	= 0	; Analog Channel and Gain Selection Bits
+          .equ	MUX1	= 1	; Analog Channel and Gain Selection Bits
+          .equ	MUX2	= 2	; Analog Channel and Gain Selection Bits
+          .equ	MUX3	= 3	; Analog Channel and Gain Selection Bits
+          .equ	REFS2	= 4	; Reference Selection Bit 2
+          .equ	ADLAR	= 5	; Left Adjust Result
+          .equ	REFS0	= 6	; Reference Selection Bit 0
+          .equ	REFS1	= 7	; Reference Selection Bit 1
+         
+         ; ADCSRA - The ADC Control and Status register
+          .equ	ADPS0	= 0	; ADC  Prescaler Select Bits
+          .equ	ADPS1	= 1	; ADC  Prescaler Select Bits
+          .equ	ADPS2	= 2	; ADC  Prescaler Select Bits
+          .equ	ADIE	= 3	; ADC Interrupt Enable
+          .equ	ADIF	= 4	; ADC Interrupt Flag
+          .equ	ADATE	= 5	; ADC Auto Trigger Enable
+          .equ	ADSC	= 6	; ADC Start Conversion
+          .equ	ADEN	= 7	; ADC Enable
+         
+         ; ADCH - ADC Data Register High Byte
+          .equ	ADCH0	= 0	; ADC Data Register High Byte Bit 0
+          .equ	ADCH1	= 1	; ADC Data Register High Byte Bit 1
+          .equ	ADCH2	= 2	; ADC Data Register High Byte Bit 2
+          .equ	ADCH3	= 3	; ADC Data Register High Byte Bit 3
+          .equ	ADCH4	= 4	; ADC Data Register High Byte Bit 4
+          .equ	ADCH5	= 5	; ADC Data Register High Byte Bit 5
+          .equ	ADCH6	= 6	; ADC Data Register High Byte Bit 6
+          .equ	ADCH7	= 7	; ADC Data Register High Byte Bit 7
+         
+         ; ADCL - ADC Data Register Low Byte
+          .equ	ADCL0	= 0	; ADC Data Register Low Byte Bit 0
+          .equ	ADCL1	= 1	; ADC Data Register Low Byte Bit 1
+          .equ	ADCL2	= 2	; ADC Data Register Low Byte Bit 2
+          .equ	ADCL3	= 3	; ADC Data Register Low Byte Bit 3
+          .equ	ADCL4	= 4	; ADC Data Register Low Byte Bit 4
+          .equ	ADCL5	= 5	; ADC Data Register Low Byte Bit 5
+          .equ	ADCL6	= 6	; ADC Data Register Low Byte Bit 6
+          .equ	ADCL7	= 7	; ADC Data Register Low Byte Bit 7
+         
+         ; ADCSRB - ADC Control and Status Register B
+          .equ	ADTS0	= 0	; ADC Auto Trigger Source 0
+          .equ	ADTS1	= 1	; ADC Auto Trigger Source 1
+          .equ	ADTS2	= 2	; ADC Auto Trigger Source 2
+          .equ	IPR	= 5	; Input Polarity Mode
+          .equ	BIN	= 7	; Bipolar Input Mode
+         
+         ; DIDR0 - Digital Input Disable Register 0
+          .equ	ADC1D	= 2	; ADC1 Digital input Disable
+          .equ	ADC3D	= 3	; ADC3 Digital input Disable
+          .equ	ADC2D	= 4	; ADC2 Digital input Disable
+          .equ	ADC0D	= 5	; ADC0 Digital input Disable
+         
+         ; USI
+         ; USIBR - USI Buffer Register
+         
+         ; USIDR - USI Data Register
+          .equ	USIDR0	= 0	; USI Data Register bit 0
+          .equ	USIDR1	= 1	; USI Data Register bit 1
+          .equ	USIDR2	= 2	; USI Data Register bit 2
+          .equ	USIDR3	= 3	; USI Data Register bit 3
+          .equ	USIDR4	= 4	; USI Data Register bit 4
+          .equ	USIDR5	= 5	; USI Data Register bit 5
+          .equ	USIDR6	= 6	; USI Data Register bit 6
+          .equ	USIDR7	= 7	; USI Data Register bit 7
+         
+         ; USISR - USI Status Register
+          .equ	USICNT0	= 0	; USI Counter Value Bit 0
+          .equ	USICNT1	= 1	; USI Counter Value Bit 1
+          .equ	USICNT2	= 2	; USI Counter Value Bit 2
+          .equ	USICNT3	= 3	; USI Counter Value Bit 3
+          .equ	USIDC	= 4	; Data Output Collision
+          .equ	USIPF	= 5	; Stop Condition Flag
+          .equ	USIOIF	= 6	; Counter Overflow Interrupt Flag
+          .equ	USISIF	= 7	; Start Condition Interrupt Flag
+         
+         ; USICR - USI Control Register
+          .equ	USITC	= 0	; Toggle Clock Port Pin
+          .equ	USICLK	= 1	; Clock Strobe
+          .equ	USICS0	= 2	; USI Clock Source Select Bit 0
+          .equ	USICS1	= 3	; USI Clock Source Select Bit 1
+          .equ	USIWM0	= 4	; USI Wire Mode Bit 0
+          .equ	USIWM1	= 5	; USI Wire Mode Bit 1
+          .equ	USIOIE	= 6	; Counter Overflow Interrupt Enable
+          .equ	USISIE	= 7	; Start Condition Interrupt Enable
+         
+         ; EXTERNAL_INTERRUPT
+         ; MCUCR - MCU Control Register
+          .equ	ISC00	= 0	; Interrupt Sense Control 0 Bit 0
+          .equ	ISC01	= 1	; Interrupt Sense Control 0 Bit 1
+         
+         ; GIMSK - General Interrupt Mask Register
+          .equ	PCIE	= 5	; Pin Change Interrupt Enable
+          .equ	INT0	= 6	; External Interrupt Request 0 Enable
+         
+         ; GIFR - General Interrupt Flag register
+          .equ	PCIF	= 5	; Pin Change Interrupt Flag
+          .equ	INTF0	= 6	; External Interrupt Flag 0
+         
+         ; PCMSK - Pin Change Enable Mask
+          .equ	PCINT0	= 0	; Pin Change Enable Mask Bit 0
+          .equ	PCINT1	= 1	; Pin Change Enable Mask Bit 1
+          .equ	PCINT2	= 2	; Pin Change Enable Mask Bit 2
+          .equ	PCINT3	= 3	; Pin Change Enable Mask Bit 3
+          .equ	PCINT4	= 4	; Pin Change Enable Mask Bit 4
+          .equ	PCINT5	= 5	; Pin Change Enable Mask Bit 5
+         
+         ; EEPROM
+         ; EEARL - EEPROM Address Register Low Byte
+          .equ	EEAR0	= 0	; EEPROM Read/Write Access Bit 0
+          .equ	EEAR1	= 1	; EEPROM Read/Write Access Bit 1
+          .equ	EEAR2	= 2	; EEPROM Read/Write Access Bit 2
+          .equ	EEAR3	= 3	; EEPROM Read/Write Access Bit 3
+          .equ	EEAR4	= 4	; EEPROM Read/Write Access Bit 4
+          .equ	EEAR5	= 5	; EEPROM Read/Write Access Bit 5
+          .equ	EEAR6	= 6	; EEPROM Read/Write Access Bit 6
+          .equ	EEAR7	= 7	; EEPROM Read/Write Access Bit 7
+         
+         ; EEARH - EEPROM Address Register High Byte
+          .equ	EEAR8	= 0	; EEPROM Read/Write Access Bit 0
+         
+         ; EEDR - EEPROM Data Register
+          .equ	EEDR0	= 0	; EEPROM Data Register bit 0
+          .equ	EEDR1	= 1	; EEPROM Data Register bit 1
+          .equ	EEDR2	= 2	; EEPROM Data Register bit 2
+          .equ	EEDR3	= 3	; EEPROM Data Register bit 3
+          .equ	EEDR4	= 4	; EEPROM Data Register bit 4
+          .equ	EEDR5	= 5	; EEPROM Data Register bit 5
+          .equ	EEDR6	= 6	; EEPROM Data Register bit 6
+          .equ	EEDR7	= 7	; EEPROM Data Register bit 7
+         
+         ; EECR - EEPROM Control Register
+          .equ	EERE	= 0	; EEPROM Read Enable
+          .equ	EEPE	= 1	; EEPROM Write Enable
+          .equ	EEMPE	= 2	; EEPROM Master Write Enable
+          .equ	EERIE	= 3	; EEPROM Ready Interrupt Enable
+          .equ	EEPM0	= 4	; EEPROM Programming Mode Bit 0
+          .equ	EEPM1	= 5	; EEPROM Programming Mode Bit 1
+         
+         ; WATCHDOG
+         ; WDTCR - Watchdog Timer Control Register
+          .equ	WDP0	= 0	; Watch Dog Timer Prescaler bit 0
+          .equ	WDP1	= 1	; Watch Dog Timer Prescaler bit 1
+          .equ	WDP2	= 2	; Watch Dog Timer Prescaler bit 2
+          .equ	WDE	= 3	; Watch Dog Enable
+          .equ	WDCE	= 4	; Watchdog Change Enable
+          .equ	WDP3	= 5	; Watchdog Timer Prescaler Bit 3
+          .equ	WDIE	= 6	; Watchdog Timeout Interrupt Enable
+          .equ	WDIF	= 7	; Watchdog Timeout Interrupt Flag
+         
+         ; TIMER_COUNTER_0
+         ; TIMSK - Timer/Counter Interrupt Mask Register
+          .equ	TOIE0	= 1	; Timer/Counter0 Overflow Interrupt Enable
+          .equ	OCIE0B	= 3	; Timer/Counter0 Output Compare Match B Interrupt Enable
+          .equ	OCIE0A	= 4	; Timer/Counter0 Output Compare Match A Interrupt Enable
+         
+         ; TIFR - Timer/Counter0 Interrupt Flag register
+          .equ	TOV0	= 1	; Timer/Counter0 Overflow Flag
+          .equ	OCF0B	= 3	; Timer/Counter0 Output Compare Flag 0B
+          .equ	OCF0A	= 4	; Timer/Counter0 Output Compare Flag 0A
+         
+         ; TCCR0A - Timer/Counter  Control Register A
+          .equ	WGM00	= 0	; Waveform Generation Mode
+          .equ	WGM01	= 1	; Waveform Generation Mode
+          .equ	COM0B0	= 4	; Compare Output Mode, Fast PWm
+          .equ	COM0B1	= 5	; Compare Output Mode, Fast PWm
+          .equ	COM0A0	= 6	; Compare Output Mode, Phase Correct PWM Mode
+          .equ	COM0A1	= 7	; Compare Output Mode, Phase Correct PWM Mode
+         
+         ; TCCR0B - Timer/Counter Control Register B
+          .equ	CS00	= 0	; Clock Select
+          .equ	CS01	= 1	; Clock Select
+          .equ	CS02	= 2	; Clock Select
+          .equ	WGM02	= 3	;
+          .equ	FOC0B	= 6	; Force Output Compare B
+          .equ	FOC0A	= 7	; Force Output Compare A
+         
+         ; TCNT0 - Timer/Counter0
+          .equ	TCNT0_0	= 0	;
+          .equ	TCNT0_1	= 1	;
+          .equ	TCNT0_2	= 2	;
+          .equ	TCNT0_3	= 3	;
+          .equ	TCNT0_4	= 4	;
+          .equ	TCNT0_5	= 5	;
+          .equ	TCNT0_6	= 6	;
+          .equ	TCNT0_7	= 7	;
+         
+         ; OCR0A - Timer/Counter0 Output Compare Register
+          .equ	OCR0_0	= 0	;
+          .equ	OCR0_1	= 1	;
+          .equ	OCR0_2	= 2	;
+          .equ	OCR0_3	= 3	;
+          .equ	OCR0_4	= 4	;
+          .equ	OCR0_5	= 5	;
+          .equ	OCR0_6	= 6	;
+          .equ	OCR0_7	= 7	;
+         
+         ; OCR0B - Timer/Counter0 Output Compare Register
+         ;.equ	OCR0_0	= 0	;
+         ;.equ	OCR0_1	= 1	;
+         ;.equ	OCR0_2	= 2	;
+         ;.equ	OCR0_3	= 3	;
+         ;.equ	OCR0_4	= 4	;
+         ;.equ	OCR0_5	= 5	;
+         ;.equ	OCR0_6	= 6	;
+         ;.equ	OCR0_7	= 7	;
+         
+         ; GTCCR - General Timer/Counter Control Register
+          .equ	PSR0	= 0	; Prescaler Reset Timer/Counter1 and Timer/Counter0
+          .equ	TSM	= 7	; Timer/Counter Synchronization Mode
+         
+         ; TIMER_COUNTER_1
+         ; TCCR1 - Timer/Counter Control Register
+          .equ	CS10	= 0	; Clock Select Bits
+          .equ	CS11	= 1	; Clock Select Bits
+          .equ	CS12	= 2	; Clock Select Bits
+          .equ	CS13	= 3	; Clock Select Bits
+          .equ	COM1A0	= 4	; Compare Output Mode, Bit 1
+          .equ	COM1A1	= 5	; Compare Output Mode, Bit 0
+          .equ	PWM1A	= 6	; Pulse Width Modulator Enable
+          .equ	CTC1	= 7	; Clear Timer/Counter on Compare Match
+         
+         ; TCNT1 - Timer/Counter Register
+          .equ	TCNT1_0	= 0	; Timer/Counter Register Bit 0
+          .equ	TCNT1_1	= 1	; Timer/Counter Register Bit 1
+          .equ	TCNT1_2	= 2	; Timer/Counter Register Bit 2
+          .equ	TCNT1_3	= 3	; Timer/Counter Register Bit 3
+          .equ	TCNT1_4	= 4	; Timer/Counter Register Bit 4
+          .equ	TCNT1_5	= 5	; Timer/Counter Register Bit 5
+          .equ	TCNT1_6	= 6	; Timer/Counter Register Bit 6
+          .equ	TCNT1_7	= 7	; Timer/Counter Register Bit 7
+         
+         ; OCR1A - Output Compare Register
+          .equ	OCR1A0	= 0	; Output Compare Register A Bit 0
+          .equ	OCR1A1	= 1	; Output Compare Register A Bit 1
+          .equ	OCR1A2	= 2	; Output Compare Register A Bit 2
+          .equ	OCR1A3	= 3	; Output Compare Register A Bit 3
+          .equ	OCR1A4	= 4	; Output Compare Register A Bit 4
+          .equ	OCR1A5	= 5	; Output Compare Register A Bit 5
+          .equ	OCR1A6	= 6	; Output Compare Register A Bit 6
+          .equ	OCR1A7	= 7	; Output Compare Register A Bit 7
+         
+         ; OCR1B - Output Compare Register
+          .equ	OCR1B0	= 0	; Output Compare Register B Bit 0
+          .equ	OCR1B1	= 1	; Output Compare Register B Bit 1
+          .equ	OCR1B2	= 2	; Output Compare Register B Bit 2
+          .equ	OCR1B3	= 3	; Output Compare Register B Bit 3
+          .equ	OCR1B4	= 4	; Output Compare Register B Bit 4
+          .equ	OCR1B5	= 5	; Output Compare Register B Bit 5
+          .equ	OCR1B6	= 6	; Output Compare Register B Bit 6
+          .equ	OCR1B7	= 7	; Output Compare Register B Bit 7
+         
+         ; TIMSK - Timer/Counter Interrupt Mask Register
+          .equ	TOIE1	= 2	; Timer/Counter1 Overflow Interrupt Enable
+          .equ	OCIE1B	= 5	; OCIE1A: Timer/Counter1 Output Compare B Interrupt Enable
+          .equ	OCE1A	= 6	; OCIE1A: Timer/Counter1 Output Compare Interrupt Enable
+         
+         ; TIFR - Timer/Counter Interrupt Flag Register
+          .equ	TOV1	= 2	; Timer/Counter1 Overflow Flag
+          .equ	OCF1B	= 5	; Timer/Counter1 Output Compare Flag 1B
+          .equ	OCF1A	= 6	; Timer/Counter1 Output Compare Flag 1A
+         
+         ; GTCCR - Timer counter control register
+          .equ	PSR1	= 1	; Prescaler Reset Timer/Counter1
+          .equ	FOC1A	= 2	; Force Output Compare 1A
+          .equ	FOC1B	= 3	; Force Output Compare Match 1B
+          .equ	COM1B0	= 4	; Comparator B Output Mode
+          .equ	COM1B1	= 5	; Comparator B Output Mode
+          .equ	PWM1B	= 6	; Pulse Width Modulator B Enable
+         
+         ; DTPS - Dead time prescaler register
+          .equ	DTPS0	= 0	;
+          .equ	DTPS1	= 1	;
+         
+         ; DTVALA - Dead time value register
+          .equ	DTVL0	= 0	;
+          .equ	DTVL1	= 1	;
+          .equ	DTVL2	= 2	;
+          .equ	DTVL3	= 3	;
+          .equ	DTVH0	= 4	;
+          .equ	DTVH1	= 5	;
+          .equ	DTVH2	= 6	;
+          .equ	DTVH3	= 7	;
+         
+         ; DTVALB - Dead time value B
+         ;.equ	DTVL0	= 0	;
+         ;.equ	DTVL1	= 1	;
+         ;.equ	DTVL2	= 2	;
+         ;.equ	DTVL3	= 3	;
+         ;.equ	DTVH0	= 4	;
+         ;.equ	DTVH1	= 5	;
+         ;.equ	DTVH2	= 6	;
+         ;.equ	DTVH3	= 7	;
+         
+         ; CPU
+         ; SREG - Status Register
+          .equ	SREG_C	= 0	; Carry Flag
+          .equ	SREG_Z	= 1	; Zero Flag
+          .equ	SREG_N	= 2	; Negative Flag
+          .equ	SREG_V	= 3	; Two's Complement Overflow Flag
+          .equ	SREG_S	= 4	; Sign Bit
+          .equ	SREG_H	= 5	; Half Carry Flag
+          .equ	SREG_T	= 6	; Bit Copy Storage
+          .equ	SREG_I	= 7	; Global Interrupt Enable
+         
+         ; MCUCR - MCU Control Register
+         ;.equ	ISC00	= 0	; Interrupt Sense Control 0 bit 0
+         ;.equ	ISC01	= 1	; Interrupt Sense Control 0 bit 1
+          .equ	SM0	= 3	; Sleep Mode Select Bit 0
+          .equ	SM1	= 4	; Sleep Mode Select Bit 1
+          .equ	SE	= 5	; Sleep Enable
+          .equ	PUD	= 6	; Pull-up Disable
+         
+         ; MCUSR - MCU Status register
+          .equ	PORF	= 0	; Power-On Reset Flag
+          .equ	EXTRF	= 1	; External Reset Flag
+          .equ	BORF	= 2	; Brown-out Reset Flag
+          .equ	WDRF	= 3	; Watchdog Reset Flag
+         
+         ; OSCCAL - Oscillator Calibration Register
+          .equ	CAL0	= 0	; Oscillatro Calibration Value Bit 0
+          .equ	CAL1	= 1	; Oscillatro Calibration Value Bit 1
+          .equ	CAL2	= 2	; Oscillatro Calibration Value Bit 2
+          .equ	CAL3	= 3	; Oscillatro Calibration Value Bit 3
+          .equ	CAL4	= 4	; Oscillatro Calibration Value Bit 4
+          .equ	CAL5	= 5	; Oscillatro Calibration Value Bit 5
+          .equ	CAL6	= 6	; Oscillatro Calibration Value Bit 6
+         
+         ; PLLCSR - PLL Control and status register
+          .equ	PLOCK	= 0	; PLL Lock detector
+          .equ	PLLE	= 1	; PLL Enable
+          .equ	PCKE	= 2	; PCK Enable
+          .equ	LSM	= 7	; Low speed mode
+         
+         ; CLKPR - Clock Prescale Register
+          .equ	CLKPS0	= 0	; Clock Prescaler Select Bit 0
+          .equ	CLKPS1	= 1	; Clock Prescaler Select Bit 1
+          .equ	CLKPS2	= 2	; Clock Prescaler Select Bit 2
+          .equ	CLKPS3	= 3	; Clock Prescaler Select Bit 3
+          .equ	CLKPCE	= 7	; Clock Prescaler Change Enable
+         
+         ; DWDR - debugWire data register
+          .equ	DWDR0	= 0	;
+          .equ	DWDR1	= 1	;
+          .equ	DWDR2	= 2	;
+          .equ	DWDR3	= 3	;
+          .equ	DWDR4	= 4	;
+          .equ	DWDR5	= 5	;
+          .equ	DWDR6	= 6	;
+          .equ	DWDR7	= 7	;
+         
+         ; GPIOR2 - General Purpose IO register 2
+         ; CPU/GPIOR2/BIT0: Name missing
+         ; CPU/GPIOR2/BIT1: Name missing
+         ; CPU/GPIOR2/BIT2: Name missing
+         ; CPU/GPIOR2/BIT3: Name missing
+         ; CPU/GPIOR2/BIT4: Name missing
+         ; CPU/GPIOR2/BIT5: Name missing
+         ; CPU/GPIOR2/BIT6: Name missing
+         ; CPU/GPIOR2/BIT7: Name missing
+         
+         ; GPIOR1 - General Purpose register 1
+         ; CPU/GPIOR1/BIT0: Name missing
+         ; CPU/GPIOR1/BIT1: Name missing
+         ; CPU/GPIOR1/BIT2: Name missing
+         ; CPU/GPIOR1/BIT3: Name missing
+         ; CPU/GPIOR1/BIT4: Name missing
+         ; CPU/GPIOR1/BIT5: Name missing
+         ; CPU/GPIOR1/BIT6: Name missing
+         ; CPU/GPIOR1/BIT7: Name missing
+         
+         ; GPIOR0 - General purpose register 0
+         ; CPU/GPIOR0/BIT0: Name missing
+         ; CPU/GPIOR0/BIT1: Name missing
+         ; CPU/GPIOR0/BIT2: Name missing
+         ; CPU/GPIOR0/BIT3: Name missing
+         ; CPU/GPIOR0/BIT4: Name missing
+         ; CPU/GPIOR0/BIT5: Name missing
+         ; CPU/GPIOR0/BIT6: Name missing
+         ; CPU/GPIOR0/BIT7: Name missing
+         
+         ; BOOT_LOAD
+         ; SPMCSR - Store Program Memory Control Register
+          .equ	SPMEN	= 0	; Store Program Memory Enable
+          .equ	PGERS	= 1	; Page Erase
+          .equ	PGWRT	= 2	; Page Write
+          .equ	RFLB	= 3	; Read fuse and lock bits
+          .equ	CTPB	= 4	; Clear temporary page buffer
+         
+         ; CPU REGISTER DEFINITIONS
+          .def	XH	= r27
+          .def	XL	= r26
+          .def	YH	= r29
+          .def	YL	= r28
+          .def	ZH	= r31
+          .def	ZL	= r30
+         
+         ; DATA MEMORY DECLARATIONS
+          .equ  FLASHEND  = 0x07ff  ; Note: byte-couple address
+          .equ  RAMEND    = 0x015f
+          .equ  XRAMEND   = 0x0000
+          .equ  E2END     = 0x00ff
+         
+         ; INTERRUPT VECTORS
+          .equ  INT0addr      = 0x0001  ; External Interrupt 0
+          .equ  PCI0addr      = 0x0002  ; Pin change Interrupt Request 0
+          .equ  OC1Aaddr      = 0x0003  ; Timer/Counter1 Compare Match 1A
+          .equ  OVF1addr      = 0x0004  ; Timer/Counter1 Overflow
+          .equ  OVF0addr      = 0x0005  ; Timer/Counter0 Overflow
+          .equ  ERDYaddr      = 0x0006  ; EEPROM Ready
+          .equ  ACIaddr       = 0x0007  ; Analog comparator
+          .equ  ADCaddr       = 0x0008  ; ADC Conversion ready
+          .equ  OC1Baddr      = 0x0009  ; Timer/Counter1 Compare Match B
+          .equ  OC0Aaddr      = 0x000a  ; Timer/Counter0 Compare Match A
+          .equ  OC0Baddr      = 0x000b  ; Timer/Counter0 Compare Match B
+          .equ  WDTaddr       = 0x000c  ; Watchdog Time-out
+          .equ  USI_STARTaddr = 0x000d  ; USI START
+          .equ  USI_OVFaddr   = 0x000e  ; USI Overflow
+         
+          .include "include/macro.asm"
+         
+           ; `macro.asm`
+         
+           ; --------------------------------------------------------------------------------------------------------------------------------
+         
+            .MACRO out_i ; Начало макроопределения.
+                      ldi  t_0, @1
+                      out  @0, t_0
+            .ENDMACRO ; Конец макроопределения.
+         
+            .MACRO ldi_Z ; Начало макроопределения.
+                      ldi  ZH, high(@0<<1)
+                      ldi  ZL, low (@0<<1)
+            .ENDMACRO ; Конец макроопределения.
+         
+            .MACRO ldi_Y ; Начало макроопределения.
+                      ldi  YH, high(@0)
+                      ldi  YL, low (@0)
+            .ENDMACRO ; Конец макроопределения.
+         
+            .MACRO ldi_X ; Начало макроопределения.
+                      ldi  XH, high(@0)
+                      ldi  XL, low (@0)
+            .ENDMACRO ; Конец макроопределения.
+         
+            .MACRO var_delay_3_clc ; Начало макроопределения.
+                      ldi   delay_c, @0
+                   var_delay_lbl:
+                      dec   delay_c
+                      brne  var_delay_lbl
+            .ENDMACRO ; Конец макроопределения.
+         
+           ; --------------------------------------------------------------------------------------------------------------------------------
+         
+         
+         ;-------------------------------------------------;
+         ; ___           ------                            ;
+         ; rst / PB5 ===|      |=== 3.0 V ---------------| ;
+         ;  --== PB3 ===| tiny |=== PB2 - SDA ---|10к|---| ;
+         ;  --== PB4 ===|  45  |=== PB1 - SCL ---|10к|---| ;
+         ;       gnd ===|      |=== PB0 - R/T ---|10к|---| ;
+         ;               ------                            ;
+         ;-------------------------------------------------;
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+         ; АСИНХРОННЫЙ ПРИЁМНИК - ПЕРЕДАТЧИК :
+         
+          .equ   art_DDR    = DDRB
+          .equ   art_PORT   = PORTB
+          .equ   art_PIN    = PINB
+         
+          .equ   art_R      = 0
+          .equ   art_T      = 0
+         
+         ; ЭМПИРИЧЕСКИЕ ПОСТОЯННЫЕ :
+         ; 115,2 кГц при частоте кварцевого резонатора 11,0592 МГц
+          .equ   art_R_pause_value        =  30
+          .equ   art_R_shift_pause_value  =  10
+          .equ   art_T_pause_value        =  28
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+         ; ДВУХПРОВОДНЫЙ ДВУНАПРАВЛЕННЫЙ СИНРОНИЗОВАННЫЙ КАНАЛ СВЯЗИ :
+         
+          .equ   i2c_DDR    = DDRB
+          .equ   i2c_PORT   = PORTB
+          .equ   i2c_PIN    = PINB
+         
+          .equ   i2c_SCL    = 1
+          .equ   i2c_SDA    = 2
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+          .equ   SRAM_START = 0x0100
+          .equ   SRAM_SIZE  = 0x0060
+         
+         ; -----------------
+         ; r13,r14,r15 ЗАНЯТЫ !
+         ; -----------------
+          .def  t_0     = r16 ; temporary # 0
+         ; -----------------
+          .def  t_1     = r17 ; temporary # 1
+          .def  t_2     = r18 ; temporary # 2
+         ; -----------------
+          .def  delay_c = r20
+         ; -----------------
+          .def  data_c  = r21
+         ; -----------------
+          .def  action  = r22
+          .def  nibble  = r23
+         ; -----------------
+          .def  cnt_1   = r24
+          .def  cnt_2   = r25
+         ; -----------------
+         
+          .equ  r_buffer = SRAM_START ; начало приемного буфера порта в оперативной памяти контроллера - ОБЯЗАТЕЛЬНО "МЛАДШИЕ" 8 РАЗРЯДОВ Д.Б. "0"
+         
+          .ORG 0x000 ; начнём с начала
+         
+         ; `interrupts links`
+         
+000000 c032      rjmp   RESET ; reset handler
+         
+000001 9518      reti
+000002 9518      reti
+000003 9518      reti
+000004 9518      reti
+000005 9518      reti
+000006 9518      reti
+000007 9518      reti
+000008 9518      reti
+000009 9518      reti
+00000a 9518      reti
+00000b 9518      reti
+00000c 9518      reti
+00000d 9518      reti
+00000e 9518      reti
+00000f 9518      reti
+000010 9518      reti
+000011 9518      reti
+000012 9518      reti
+000013 9518      reti
+000014 9518      reti
+000015 9518      reti
+000016 9518      reti
+000017 9518      reti
+000018 9518      reti
+000019 9518      reti
+00001a 9518      reti
+00001b 9518      reti
+00001c 9518      reti
+00001d 9518      reti
+00001e 9518      reti
+00001f 9518      reti
+000020 9518      reti
+000021 9518      reti
+000022 9518      reti
+000023 9518      reti
+000024 9518      reti
+000025 9518      reti
+000026 9518      reti
+000027 9518      reti
+000028 9518      reti
+000029 9518      reti
+00002a 9518      reti
+00002b 9518      reti
+00002c 9518      reti
+00002d 9518      reti
+00002e 9518      reti
+00002f 9518      reti
+000030 9518      reti
+000031 9518      reti
+000032 9518      reti
+         
+          RESET:
+         
+000033 94f8        cli
+         
+           ; hw init
+           ; set stack pointer to top of ram
+000034   +    out_i  SPH, high(RAMEND)
+000036   +    out_i  SPL, low (RAMEND)
+         
+000038   +    out_i  ACSR, 1 << ACD ; analog comparator disable
+         
+00003a   +    out_i  WDTCR, 24
+00003c   +    out_i  WDTCR, 15
+00003e 95a8        wdr
+         
+00003f d11d        rcall  i2c_init
+000040 d098        rcall  port_configure
+         
+000041 d083        rcall  pack_begin
+000042   +    ldi_Z  welcome_text
+000044 d10d        rcall  sndstr
+000045 d083        rcall  pack_end
+         
+           ; sw init
+           ; r_buffer  := 00|00|00 ...
+           ; стираем SRAM_SIZE байтов с r_buffer байта
+000046 d079        rcall  r_buffer_init
+000047 2700        clr    t_0
+000048 e090        ldi    cnt_2, high(SRAM_SIZE)
+000049 e680        ldi    cnt_1, low (SRAM_SIZE)
+            clear_memory_loop:
+00004a 95a8           wdr
+00004b 9309           st    Y+, t_0
+00004c 9701           sbiw  cnt_2:cnt_1, 1
+00004d f7e1           brne  clear_memory_loop
+00004e d071        rcall  r_buffer_init
+00004f 2700        clr    t_0
+000050 2711        clr    t_1
+000051 2722        clr    t_2
+000052 2744        clr    delay_c
+000053 2755        clr    data_c
+000054 2766        clr    action
+000055 2777        clr    nibble
+000056 2788        clr    cnt_1
+000057 2799        clr    cnt_2
+         
+           LOOP: ; основной цикл
+000058 95a8          wdr
+         
+000059 d092          rcall  check_receive
+00005a f3ee          brts   LOOP
+         
+                ; селектор захвата принятого байта, находящегося в ячейке `t_0`
+         
+                   ; начать принимать данные
+00005b 330e                cpi   t_0, '>'
+00005c f041                  breq  init_receiving
+         
+                   ; завершить приём данных
+00005d 300d                cpi   t_0, 13 ; [CR]
+00005e f3c9                  breq  LOOP ; игнорируем
+00005f 300a                cpi   t_0, 10 ; [LF]
+000060 f031                  breq  action_do ; ПРИНЯЛИ ПАКЕТ ...
+000061 350c                cpi   t_0, '\' ; альтернативный признак конца пакета
+000062 f021                  breq  action_do ; ПРИНЯЛИ ПАКЕТ ...
+         
+000063 9309                st     Y+, t_0
+000064 cff3                rjmp   LOOP
+         
+                 init_receiving:
+000065 d05a                rcall  r_buffer_init
+000066 cff1                rjmp   LOOP
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+                 action_do:
+000067 23cc                tst     YL
+000068 f379                breq    LOOP ; если данных в буфере нету ...
+000069 2f8c                mov     cnt_1, YL
+00006a d055                rcall   r_buffer_init
+00006b 2755                clr     data_c
+         
+                 symbols_capture_loop:
+00006c 95a8                wdr
+00006d 9109                ld      t_0, Y+
+00006e 3703                cpi     t_0, 's' ; start condition
+00006f f041                breq    i2c_start_condition
+000070 3702                cpi     t_0, 'r' ; read data
+000071 f041                breq    begin_to_read_data
+000072 3603                cpi     t_0, 'c' ; wait for `SCL`
+000073 f041                breq    wait_for_SCL
+000074 3605                cpi     t_0, 'e' ; debug mode <<echo>>
+000075 f0c1                breq    debug_send_data
+                   ; <...>
+000076 d02c                rcall   byte_capture
+000077 c020                rjmp    get_next_symbol
+         
+                 i2c_start_condition:
+000078 d0f1                rcall   i2c_start
+000079 c01e                rjmp    get_next_symbol
+         
+                 begin_to_read_data:
+00007a e061                ldi     action, 1 ; `read mode`
+00007b c01c                rjmp    get_next_symbol
+         
+                 wait_for_SCL:
+00007c d0e7                rcall   i2c_SCL_1 ; чтобы "отпустить" линию `SCL`
+                   ; Generated by delay loop calculator
+                   ; at http://www.bretmulvey.com/avrdelay.html
+                   ; Delay 11 059 200 cycles
+                   ; 1s at 11.0592 MHz {без дополнительных действий}
+00007d e309                ldi     t_0, 57
+00007e 2ed0                mov     r13, t_0
+00007f e10b                ldi     t_0, 27
+000080 2ee0                mov     r14, t_0
+000081 e702                ldi     t_0, 114
+000082 2ef0                mov     r15, t_0
+                   wait_for_SCL_lbl:
+000083 95a8                wdr
+000084 99b1                sbic    i2c_PIN, i2c_SCL
+000085 c006                rjmp    wait_for_SCL_end ; переход только когда `SCL` "отпущена" ведомым
+000086 94fa                dec     r15
+000087 f7d9                brne    wait_for_SCL_lbl
+000088 94ea                dec     r14
+000089 f7c9                brne    wait_for_SCL_lbl
+00008a 94da                dec     r13
+00008b f7b9                brne    wait_for_SCL_lbl
+                   wait_for_SCL_end:
+00008c d0d5                rcall   i2c_SCL_0 ; чтобы вновь передавать и принимать данные ...
+00008d c00a                rjmp  get_next_symbol
+         
+                 debug_send_data:
+00008e 958a                dec     cnt_1 ; ???
+00008f d035                rcall   pack_begin
+                   debug_send_loop:
+000090 2388                tst     cnt_1
+000091 f021                breq    debug_send_end
+000092 9119                ld      t_1, Y+
+000093 d078                rcall   send
+000094 958a                dec     cnt_1
+000095 cffa                rjmp    debug_send_loop
+                   debug_send_end:
+000096 d032                rcall   pack_end
+000097 cfc0                rjmp    LOOP
+         
+                 get_next_symbol:
+000098 958a                dec     cnt_1
+000099 f691                brne    symbols_capture_loop
+                 i2c_stop_condition:
+00009a d0d7                rcall   i2c_stop
+00009b 3061                cpi     action, 1 ; `read mode`
+00009c f021                breq    is_read_action
+00009d d027                rcall   pack_begin
+00009e 2f25                mov     t_2, data_c
+00009f d0a8                rcall   send2
+0000a0 d028                rcall   pack_end
+                 is_read_action:
+0000a1 d01e                rcall   r_buffer_init
+0000a2 cfb5                rjmp    LOOP
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+                ; захват принятого байта (HI,LO)
+                 byte_capture:
+0000a3 fd70                   sbrc   nibble, 0
+0000a4 c006                   rjmp   byte_receive ; nibble.0 = 1 (LO)
+0000a5 2f10                   mov    t_1, t_0
+0000a6 d09c                   rcall  s2d
+0000a7 9512                   swap   t_1 ; move to the HI nibble
+0000a8 2f21                   mov    t_2, t_1 ; capture the HI nibble
+0000a9 9573                   inc    nibble
+0000aa 9508                   ret
+         
+                ; захват принятого байта (LO)
+                 byte_receive:
+0000ab 2f10                   mov    t_1, t_0 ; capture the LO nibble
+0000ac d096                   rcall  s2d
+0000ad 9573                   inc    nibble
+0000ae 2b21                   or     t_2, t_1
+                      ; байт принят в символьной форме и находится в `t_2`
+0000af 3061                   cpi    action, 1 ; `read mode`
+0000b0 f451                   brne   write_mode_action
+0000b1 2f92                   mov    cnt_2, t_2
+0000b2 2722                   clr    t_2
+                      ; ПОЛУЧИЛИ КОЛИЧЕСТВО ЧИТАЕМЫХ БАЙТОВ,
+                      ; ТЕПЕРЬ ЧИТАЕМ ЗАПРАШИВАЕМЫЕ ДАННЫЕ:
+0000b3 d011                   rcall  pack_begin
+                    i2c_read_data_loop:
+0000b4 95a8                   wdr
+0000b5 d0df                   rcall   i2c_read
+                      ; send the data
+0000b6 d091                   rcall   send2
+0000b7 959a                   dec     cnt_2
+0000b8 f7d9                   brne    i2c_read_data_loop
+0000b9 d00f                   rcall   pack_end
+0000ba 9508                   ret
+                    write_mode_action:
+0000bb 2f12                   mov    t_1, t_2
+0000bc 2722                   clr    t_2
+0000bd d0ca                   rcall  i2c_write
+0000be 9553                   inc    data_c
+0000bf 9508                   ret
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+          r_buffer_init:
+0000c0   +            ldi_Y   r_buffer
+0000c2 e060                ldi     action, 0 ; `write mode`
+0000c3 2777                clr     nibble
+0000c4 9508                ret
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+          pack_begin:
+0000c5 d00e                rcall   transmitt
+0000c6 e31c                ldi     t_1, '<'
+0000c7 d044                rcall   send
+0000c8 9508                ret
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+          pack_end:
+0000c9 e01d                ldi     t_1, 13 ; [CR]
+0000ca d041                rcall   send
+0000cb e01a                ldi     t_1, 10 ; [LF]
+0000cc d03f                rcall   send
+0000cd d08a                rcall   wait_end_of_sending
+0000ce d001                rcall   receive
+0000cf 9508                ret
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+          receive: ; (void)
+0000d0 d088                rcall  i2c_delay
+0000d1 98b8                cbi    art_DDR,  art_R
+0000d2 98c0                cbi    art_PORT, art_R
+0000d3 9508                ret
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+          transmitt: ; (void)
+0000d4 d084                rcall  i2c_delay
+0000d5 9ac0                sbi    art_PORT, art_R
+0000d6 9ab8                sbi    art_DDR,  art_R
+0000d7 d081                rcall  i2c_delay
+0000d8 9508                ret
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+          .include "include/ART.asm"  ; asynchronous receiver / transmitter
+         
+         ; `art.asm`
+         
+         ; -----------------------------------------------------------------------------------------------------------------------------
+         
+          port_configure: ; (void)
+0000d9 dffa        rcall   transmitt
+             ; sbi  art_DDR,  art_T
+             ; cbi  art_DDR,  art_R
+             ; sbi  art_PORT, art_T
+             ; sbi  art_PORT, art_R
+0000da 98b8            cbi  art_DDR,  art_R
+0000db 98c0            cbi  art_PORT, art_R
+0000dc dff3        rcall   receive
+0000dd 9508        ret
+         
+         ; -----------------------------------------------------------------------------------------------------------------------------
+         
+0000de   +    art_R_pause:  var_delay_3_clc  art_R_pause_value
+0000e1 0000                      nop
+0000e2 0000                      nop
+0000e3 9508                      ret
+         
+0000e4   +    art_R_shift_pause:  var_delay_3_clc  art_R_shift_pause_value
+0000e7 9508                            ret
+         
+           ; Generated by delay loop calculator
+           ; at http://www.bretmulvey.com/avrdelay.html
+         
+0000e8   +    art_T_pause:  var_delay_3_clc  art_T_pause_value
+0000eb 9508                      ret
+         
+         ; -----------------------------------------------------------------------------------------------------------------------------
+         
+            .MACRO art_R_bit
+                      rcall  art_R_pause
+                     ; ЧТЕНИЕ РАЗРЯДА `@0`
+                      sbic   art_PIN, art_R
+                      sbr    t_0, 1 << @0
+            .ENDMACRO
+         
+            .MACRO art_T_bit
+                     ; ЗАПИСЬ РАЗРЯДА `@0`
+                      sbrc   t_1, @0
+                      sbi    art_PORT, art_T
+                      sbrs   t_1, @0
+                      cbi    art_PORT, art_T
+                      rcall  art_T_pause
+            .ENDMACRO
+         
+         ; -----------------------------------------------------------------------------------------------------------------------------
+         
+          check_receive: ; (void), return: if SREG.T=0, then received, result in `t_0`
+0000ec 9468           set
+0000ed 2700           clr    t_0
+0000ee 99b0           sbic   art_PIN, art_R ; ловим стартовый бит ...
+0000ef 9508           ret ; высокий уровень
+0000f0 dff3           rcall  art_R_shift_pause
+              ; НАЧАЛО ПРИЁМА БАЙТА ДАННЫХ
+0000f1   +       art_R_bit  0
+0000f4   +       art_R_bit  1
+0000f7   +       art_R_bit  2
+0000fa   +       art_R_bit  3
+0000fd   +       art_R_bit  4
+000100   +       art_R_bit  5
+000103   +       art_R_bit  6
+000106   +       art_R_bit  7
+000109 dfda           rcall  art_R_shift_pause
+00010a 94e8           clt
+00010b 9508           ret
+         
+         ; -----------------------------------------------------------------------------------------------------------------------------
+         
+          send: ; (char b{ t_1 })
+00010c 98c0           cbi    art_PORT, art_T
+00010d dfda           rcall  art_T_pause
+              ; `довесок`
+00010e 0000           nop
+00010f 0000           nop
+000110 0000           nop
+000111   +       art_T_bit  0
+000116   +       art_T_bit  1
+00011b   +       art_T_bit  2
+000120   +       art_T_bit  3
+000125   +       art_T_bit  4
+00012a   +       art_T_bit  5
+00012f   +       art_T_bit  6
+000134   +       art_T_bit  7
+000139 9ac0           sbi    art_PORT, art_T
+00013a dfad           rcall  art_T_pause
+00013b dfac           rcall  art_T_pause
+00013c dfab           rcall  art_T_pause
+00013d 9508           ret
+         
+         ; -----------------------------------------------------------------------------------------------------------------------------
+         
+         ; Преобразовать число 0..15 в символ `0`..`9` `A`..`F`
+          d2s: ; (char v{ t_1 })
+00013e 5d10           subi    t_1, 208 ; t_1+='0'
+00013f 331a           cpi     t_1, 58  ; if(t_1>'9'), carry set if ('9'+1)>t_1
+000140 f008           brcs    d2s_1    ; branch if carry set
+000141 5f19           subi    t_1, 249 ; t_1+=7
+            d2s_1:
+000142 9508           ret
+         
+         ; -----------------------------------------------------------------------------------------------------------------------------
+         
+         ; Преобразовать символ `0`..`9` `A`..`F`..`N` в число 0..15..23
+          s2d: ; (char v{ t_1 })
+000143 5310           subi    t_1, 48 ; t_1-='0'
+000144 301a           cpi     t_1, 10 ; if(t_1>9), carry set if (9+1)>t_1
+000145 f008           brcs    s2d_1   ; branch if carry set
+000146 5017           subi    t_1, 7  ; t_1-=7
+            s2d_1:
+000147 9508           ret
+         
+         ; -----------------------------------------------------------------------------------------------------------------------------
+         
+          send2: ; (char b{ t_2 })
+000148 2f12             mov   t_1, t_2
+                ; hi digit send
+000149 9512             swap  t_1 ; меняем местами "нибблы"
+00014a 701f             andi  t_1, 15
+00014b dff2             rcall d2s
+00014c dfbf             rcall send
+                ; lo digit send
+00014d 2f12             mov   t_1, t_2
+00014e 701f             andi  t_1, 15
+00014f dfee             rcall d2s
+000150 dfbb             rcall send
+000151 9508             ret
+         
+         ; -----------------------------------------------------------------------------------------------------------------------------
+         
+          sndstr: ; (char const* string{ RAMPZ:Z_h:Z_l })
+000152 9117            elpm  t_1, Z+
+000153 2311            tst   t_1
+000154 f011            breq  sndstr_1 ; eol
+000155 dfb6            rcall send
+000156 cffb            rjmp  sndstr
+             sndstr_1:
+000157 9508            ret
+         
+         ; -----------------------------------------------------------------------------------------------------------------------------
+         
+000158 9508      wait_end_of_sending: ret
+         
+         ; -----------------------------------------------------------------------------------------------------------------------------
+         
+          .include "include/I2C.asm"  ; I2C functions
+         
+           ; `i2c.asm`
+         
+           ; --------------------------------------------------------------------------------------------------------------------------------
+         
+000159   +    i2c_delay:  var_delay_3_clc  40
+00015c 9508                    ret
+         
+            i2c_init:
+00015d 98c2                  cbi    i2c_PORT, i2c_SDA
+00015e 98c1                  cbi    i2c_PORT, i2c_SCL
+00015f d008                  rcall  i2c_SDA_1 ; "отпускаем" линию
+000160 d003                  rcall  i2c_SCL_1 ; "отпускаем" линию
+000161 9508                  ret
+         
+            i2c_SCL_0:
+                     ; притянуть к "земле"
+000162 9ab9                  sbi    i2c_DDR, i2c_SCL
+000163 9508                  ret
+         
+            i2c_SCL_1:
+                     ; "третье состояние"
+000164 98b9                  cbi    i2c_DDR, i2c_SCL
+000165 9508                  ret
+         
+            i2c_SDA_0:
+                     ; притянуть к "земле"
+000166 9aba                  sbi    i2c_DDR, i2c_SDA
+000167 9508                  ret
+         
+            i2c_SDA_1:
+                     ; "третье состояние"
+000168 98ba                  cbi    i2c_DDR, i2c_SDA
+000169 9508                  ret
+         
+            i2c_start:
+00016a dffd                  rcall  i2c_SDA_1 ; SCL: -----|------  |
+00016b dff8                  rcall  i2c_SCL_1 ;           |      \ |
+00016c dfec                  rcall  i2c_delay ;           |       \|
+00016d dff8                  rcall  i2c_SDA_0 ;           |        ------
+00016e dfea                  rcall  i2c_delay ; SDA: ------        |
+00016f dff2                  rcall  i2c_SCL_0 ;           |\       |
+000170 dfe8                  rcall  i2c_delay ;           | \      |
+000171 9508                  ret              ;           |  ------|-----
+         
+            i2c_stop:
+000172 dfef                  rcall  i2c_SCL_0 ;           |  ------|-----
+000173 dff2                  rcall  i2c_SDA_0 ;           | /      |
+000174 dfe4                  rcall  i2c_delay ;           |/       |
+000175 dfee                  rcall  i2c_SCL_1 ; SCL: -----|        |
+000176 dfe2                  rcall  i2c_delay ;           |        |-----
+000177 dff0                  rcall  i2c_SDA_1 ;           |       /|
+000178 dfe0                  rcall  i2c_delay ;           |      / |
+000179 9508                  ret              ; SDA: -----|------  |
+         
+            i2c_SCL_pulse:
+00017a dfde                  rcall  i2c_delay ;           |  ----  |
+00017b dfe8                  rcall  i2c_SCL_1 ;           | /    \ |
+00017c dfdc                  rcall  i2c_delay ;           |/      \|
+00017d dfe4                  rcall  i2c_SCL_0 ; SCL: -----|        |-----
+00017e 9508                  ret
+         
+            i2c_rd_bit: ; return `t_1`
+00017f dfe4                  rcall  i2c_SCL_1
+000180 dfd8                  rcall  i2c_delay
+000181 dfd7                  rcall  i2c_delay
+000182 dfd6                  rcall  i2c_delay
+000183 b316                  in     t_1, i2c_PIN ; read in `t_1` . bit # `i2c_SDA`
+000184 dfd4                  rcall  i2c_delay
+000185 dfdc                  rcall  i2c_SCL_0
+000186 dfd2                  rcall  i2c_delay
+000187 9508                  ret
+         
+            i2c_write: ; (t_1)
+                     ; MSB .. LSB
+000188 e800                  ldi    t_0, 0x80
+                 i2c_write_loop:
+000189 2f21                  mov    t_2, t_1
+00018a 2320                  and    t_2, t_0
+00018b f011                  breq   i2c_write_0
+00018c dfdb                  rcall  i2c_SDA_1
+00018d c001                  rjmp   i2c_write_1_
+                 i2c_write_0:
+00018e dfd7                  rcall  i2c_SDA_0
+                 i2c_write_1_:
+00018f dfea                  rcall  i2c_SCL_pulse
+000190 9506                  LSR    t_0
+000191 f7b9                  brne   i2c_write_loop
+000192 dfd5                  rcall  i2c_SDA_1  ; "отпускаем" линию
+000193 dfeb                  rcall  i2c_rd_bit ; БИТ ПОДТВЕРЖДЕНИЯ.
+000194 9508                  ret
+         
+            i2c_read: ; return `t_2`
+                     ; MSB .. LSB
+000195 e800                  ldi    t_0, 0x80
+000196 2722                  clr    t_2
+000197 dfd0                  rcall  i2c_SDA_1 ; "отпускаем" линию
+                 i2c_read_loop:
+000198 dfe6                  rcall  i2c_rd_bit
+000199 fd12                  sbrc   t_1, i2c_SDA
+00019a 2b20                  or     t_2, t_0
+00019b 9506                  LSR    t_0
+00019c f7d9                  brne   i2c_read_loop
+                     ; БИТ ПОДТВЕРЖДЕНИЯ (`0` или `1`)
+00019d 3091                  cpi    cnt_2, 1 ; последний байт с "высоким" подтверждением, остальные - с "низким"
+00019e f011                  breq   i2c_read_ack_1
+00019f dfc6                  rcall  i2c_SDA_0
+0001a0 c001                  rjmp   i2c_read_ack_send
+                 i2c_read_ack_1:
+0001a1 dfc6                  rcall  i2c_SDA_1
+                 i2c_read_ack_send:
+0001a2 dfd7                  rcall  i2c_SCL_pulse
+0001a3 9508                  ret
+         
+           ; --------------------------------------------------------------------------------------------------------------------------------
+         
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+0001a4      welcome_text: .db "`ART4IIC` - welcome",0
+0001a4 4160
+0001a5 5452
+0001a6 4934
+0001a7 4349
+0001a8 2060
+0001a9 202d
+0001aa 6577
+0001ab 636c
+0001ac 6d6f
+0001ad 0065
+         
+         ; ----------------------------------------------------------------------------------------------------------------------------------
+         
+
+Assembly complete with no errors.
