@@ -9,27 +9,27 @@
   i2c_init:
             cbi    i2c_PORT, i2c_SDA
             cbi    i2c_PORT, i2c_SCL
-            rcall  i2c_SDA_1 ; "отпускаем" линию
-            rcall  i2c_SCL_1 ; "отпускаем" линию
+            rcall  i2c_SDA_1 ; "РѕС‚РїСѓСЃРєР°РµРј" Р»РёРЅРёСЋ
+            rcall  i2c_SCL_1 ; "РѕС‚РїСѓСЃРєР°РµРј" Р»РёРЅРёСЋ
             ret
 
   i2c_SCL_0:
-            ; притянуть к "земле"
+            ; РїСЂРёС‚СЏРЅСѓС‚СЊ Рє "Р·РµРјР»Рµ"
             sbi    i2c_DDR, i2c_SCL
             ret
 
   i2c_SCL_1:
-            ; "третье состояние"
+            ; "С‚СЂРµС‚СЊРµ СЃРѕСЃС‚РѕСЏРЅРёРµ"
             cbi    i2c_DDR, i2c_SCL
             ret
 
   i2c_SDA_0:
-            ; притянуть к "земле"
+            ; РїСЂРёС‚СЏРЅСѓС‚СЊ Рє "Р·РµРјР»Рµ"
             sbi    i2c_DDR, i2c_SDA
             ret
 
   i2c_SDA_1:
-            ; "третье состояние"
+            ; "С‚СЂРµС‚СЊРµ СЃРѕСЃС‚РѕСЏРЅРёРµ"
             cbi    i2c_DDR, i2c_SDA
             ret
 
@@ -86,23 +86,23 @@
             rcall  i2c_SCL_pulse
             LSR    t_0
             brne   i2c_write_loop
-            rcall  i2c_SDA_1  ; "отпускаем" линию
-            rcall  i2c_rd_bit ; БИТ ПОДТВЕРЖДЕНИЯ.
+            rcall  i2c_SDA_1  ; "РѕС‚РїСѓСЃРєР°РµРј" Р»РёРЅРёСЋ
+            rcall  i2c_rd_bit ; Р‘РРў РџРћР”РўР’Р•Р Р–Р”Р•РќРРЇ.
             ret
 
   i2c_read: ; return `t_2`
             ; MSB .. LSB
             ldi    t_0, 0x80
             clr    t_2
-            rcall  i2c_SDA_1 ; "отпускаем" линию
+            rcall  i2c_SDA_1 ; "РѕС‚РїСѓСЃРєР°РµРј" Р»РёРЅРёСЋ
        i2c_read_loop:
             rcall  i2c_rd_bit
             sbrc   t_1, i2c_SDA
             or     t_2, t_0
             LSR    t_0
             brne   i2c_read_loop
-            ; БИТ ПОДТВЕРЖДЕНИЯ (`0` или `1`)
-            cpi    cnt_2, 1 ; последний байт с "высоким" подтверждением, остальные - с "низким"
+            ; Р‘РРў РџРћР”РўР’Р•Р Р–Р”Р•РќРРЇ (`0` РёР»Рё `1`)
+            cpi    cnt_2, 1 ; РїРѕСЃР»РµРґРЅРёР№ Р±Р°Р№С‚ СЃ "РІС‹СЃРѕРєРёРј" РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµРј, РѕСЃС‚Р°Р»СЊРЅС‹Рµ - СЃ "РЅРёР·РєРёРј"
             breq   i2c_read_ack_1
             rcall  i2c_SDA_0
             rjmp   i2c_read_ack_send
